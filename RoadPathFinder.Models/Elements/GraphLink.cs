@@ -3,56 +3,73 @@ using SmallGeometry.Geographic;
 
 namespace RoadPathFinder.Models.Elements
 {
-    internal class GraphLink
+    public class GraphLink
     {
         /// <summary>Link ID</summary>
         public long ID { get; }
 
-        /// <summary>Oneway: only allowd to travel StartNode-EndNode</summary>
-        public bool IsOneWay { get; }
+        /// <summary>Oneway: only allowed to travel from StartNode to EndNode</summary>
+        public bool IsOneway { get; }
         /// <summary>link geometry, StartNode-EndNode</summary>
         public FlatLine Geometry { get; }
-        /// <summary>link length, in meter</summary>
-        public double LengthMeter => Geometry.GetLength();
 
         /// <summary>ID of node where link starts at</summary>
         public long StartNodeID { get; }
         /// <summary>position of start node</summary>
         public FlatPoint StartNode => Geometry.First();
-
-        /// <summary>accessible links from this link throgh the start node</summary>
-        private HashSet<long> _startNodeConnectedLinkIdsDirected { get; } = new();
         /// <summary>start node를 통해 진출할 수 있는 link들의 ID</summary>
         /// <remarks>진출 시 해당 링크들의 end node를 통하는 경우 음수 값</remarks>
-        public IReadOnlySet<long> StartNodeConnectedLinkIdsDirected => _startNodeConnectedLinkIdsDirected;
+        public IReadOnlySet<long> StartNodeConnectedLinkIDs => _startNodeConnectedLinkIDs;
 
 
-        /// <summary>
-        /// link가 끝나는 점의 node ID
-        /// </summary>
+        /// <summary>ID of node where link ends at</summary>
         public long EndNodeID { get; }
+        /// <summary>position of end node</summary>
         public FlatPoint EndNode => Geometry.Last();
-        private HashSet<long> _endNodeConnectedLinkIdsDirected { get; set; }
+        /// <summary>end node를 통해 진출할 수 있는 link들의 id</summary>
+        /// <remarks>진출 시 해당 링크들의 end node를 통하는 경우 음수 값</remarks>
+        public IReadOnlySet<long> EndNodeConnectedLinkIDs => _endNodeConnectedLinkIDs;
+
+
+        /// <summary>accessible links from this link throgh the start node</summary>
+        private HashSet<long> _startNodeConnectedLinkIDs { get; } = new();
+
+        /// <summary>accessible links from this link throgh the end node</summary>
+        private HashSet<long> _endNodeConnectedLinkIDs { get; } = new();
+
         /// <summary>
-        /// end node를 통해 진출할 수 있는 link들의 id
+        /// 
         /// </summary>
-        /// <remarks>
-        /// 진출 시 해당 링크들의 end node를 통하는 경우 음수 값
-        /// </remarks>
-        public IReadOnlySet<long> EndNodeConnectedLinkIdsDirected => _endNodeConnectedLinkIdsDirected;
-
-
-
-        public GraphLink DeepCopy()
+        /// <param name="geometry"></param>
+        /// <exception cref="ArgumentNullException"></exception>
+        public GraphLink(long id, bool isOneway, FlatLine geometry, long startNodeID, long endNodeID)
         {
-            var startNodeLinks = new HashSet<long>(_startNodeConnectedLinkIdsDirected);
-            var endNodeLinks = new HashSet<long>(_endNodeConnectedLinkIdsDirected);
+            ArgumentNullException.ThrowIfNull(geometry, nameof(geometry));
 
-            var result = new GraphLink(Id, IsOneWay, Geometry, StartNodeId, EndNodeId)
+            ID = id;
+            IsOneway = isOneway;
+            Geometry = geometry;
+            StartNodeID = startNodeID;
+            EndNodeID = endNodeID;
+        }
+
+        /// <summary>
+        /// Deep copy
+        /// </summary>
+        /// <returns></returns>
+        public GraphLink GetCopy()
+        {
+            var result = new GraphLink(ID, IsOneway, Geometry, StartNodeID, EndNodeID);
+
+            foreach (var linkID in StartNodeConnectedLinkIDs)
             {
-                _startNodeConnectedLinkIdsDirected = startNodeLinks,
-                _endNodeConnectedLinkIdsDirected = endNodeLinks
-            };
+                result._startNodeConnectedLinkIDs.Add(linkID);
+            }
+
+            foreach (var linkID in EndNodeConnectedLinkIDs)
+            {
+                result._endNodeConnectedLinkIDs.Add(linkID);
+            }
 
             return result;
         }
@@ -61,12 +78,11 @@ namespace RoadPathFinder.Models.Elements
         /// 이 link의 위경도 좌표계 형상을 얻음
         /// </summary>
         /// <returns></returns>
-        /// <exception cref="TransformException"></exception>
+        /// <exception cref="SmallGeometry.Exceptions.TransformException"></exception>
         public GeoLine GetGeoLine()
         {
-            GeoPoint[] geoPoints = Geometry
-                .Select(p => p.TransformToGeoPoint())
-                .ToArray();
+            var geoPoints = Geometry
+                 .Select(p => p.TransformToGeoPoint());
             var result = new GeoLine(geoPoints);
 
             return result;
@@ -76,31 +92,46 @@ namespace RoadPathFinder.Models.Elements
         /// 이 링크에 연결된 링크일 경우 연결 정보 기록
         /// </summary>
         /// <param name="link"></param>
-        public void AddConnectedLink(GraphLink link)
+        public bool AddConnectedLink(GraphLink link)
         {
             if (link == null
                 || link.ID == ID)
             {
-                return;
+                return false;
             }
 
-            if (StartNodeId == link.StartNodeId)
+            bool isAdded = false;
+
+            // 지금 거 역진행
+            if (!IsOneway)
             {
-                _startNodeConnectedLinkIdsDirected.Add(link.ID);
-            }
-            if (StartNodeId == link.EndNodeId)
-            {
-                _startNodeConnectedLinkIdsDirected.Add(-link.ID);
+                if (StartNodeID == link.StartNodeID) // 다음 거 순진행
+                {
+                    _startNodeConnectedLinkIDs.Add(link.ID);
+                    isAdded = true;
+                }
+                if (!link.IsOneway
+                    && StartNodeID == link.EndNodeID) // 다음 거 역진행
+                {
+                    _startNodeConnectedLinkIDs.Add(-link.ID);
+                    isAdded = true;
+                }
             }
 
-            if (EndNodeId == link.StartNodeId)
+            // 지금 거 순진행
+            if (EndNodeID == link.StartNodeID) // 다음 거 순진행
             {
-                _endNodeConnectedLinkIdsDirected.Add(link.ID);
+                _endNodeConnectedLinkIDs.Add(link.ID);
+                isAdded = true;
             }
-            if (EndNodeId == link.EndNodeId)
+            if (!link.IsOneway
+                && EndNodeID == link.EndNodeID) // 다음 거 역진행
             {
-                _endNodeConnectedLinkIdsDirected.Add(-link.ID);
+                _endNodeConnectedLinkIDs.Add(-link.ID);
+                isAdded = true;
             }
+
+            return isAdded;
         }
 
         /// <summary>
@@ -108,30 +139,15 @@ namespace RoadPathFinder.Models.Elements
         /// </summary>
         public void MakeReversible()
         {
-            if (_startNodeConnectedLinkIdsDirected.Count == 0)
+            if (_startNodeConnectedLinkIDs.Count == 0)
             {
-                _startNodeConnectedLinkIdsDirected.Add(ID);
+                _startNodeConnectedLinkIDs.Add(ID);
             }
-            else if (_endNodeConnectedLinkIdsDirected.Count == 0
-                && !IsOneWay)
+            else if (_endNodeConnectedLinkIDs.Count == 0
+                && !IsOneway)
             {
-                _endNodeConnectedLinkIdsDirected.Add(-ID);
+                _endNodeConnectedLinkIDs.Add(-ID);
             }
-        }
-
-        /// <summary>
-        /// link의 진행 방향과 heading과의 방향 일치율 (cosine)
-        /// </summary>
-        /// <param name="heading"></param>
-        /// <returns></returns>
-        public double GetLinkConcordance(double heading)
-        {
-
-        }
-
-        public double GetLinkConcordance(Vector v)
-        {
-
         }
     }
 }
