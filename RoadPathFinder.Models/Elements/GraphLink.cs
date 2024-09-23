@@ -5,44 +5,32 @@ namespace RoadPathFinder.Models.Elements
 {
     internal class GraphLink
     {
-        /// <summary>
-        /// Link ID
-        /// </summary>
+        /// <summary>Link ID</summary>
         public long ID { get; }
 
-        /// <summary>
-        /// 일방통행 여부
-        /// </summary>
+        /// <summary>Oneway: only allowd to travel StartNode-EndNode</summary>
         public bool IsOneWay { get; }
-
-        /// <summary>
-        /// link의 형상
-        /// </summary>
+        /// <summary>link geometry, StartNode-EndNode</summary>
         public FlatLine Geometry { get; }
-        /// <summary>
-        /// link의 길이
-        /// </summary>
+        /// <summary>link length, in meter</summary>
         public double LengthMeter => Geometry.GetLength();
 
-        /// <summary>
-        /// link가 시작하는 점의 node id
-        /// </summary>
+        /// <summary>ID of node where link starts at</summary>
         public long StartNodeID { get; }
+        /// <summary>position of start node</summary>
         public FlatPoint StartNode => Geometry.First();
-        private HashSet<long> _startNodeConnectedLinkIdsDirected { get; set; }
-        /// <summary>
-        /// start node를 통해 진출할 수 있는 link들의 id
-        /// </summary>
-        /// <remarks>
-        /// 진출 시 해당 링크들의 end node를 통하는 경우 음수 값
-        /// </remarks>
+
+        /// <summary>accessible links from this link throgh the start node</summary>
+        private HashSet<long> _startNodeConnectedLinkIdsDirected { get; } = new();
+        /// <summary>start node를 통해 진출할 수 있는 link들의 ID</summary>
+        /// <remarks>진출 시 해당 링크들의 end node를 통하는 경우 음수 값</remarks>
         public IReadOnlySet<long> StartNodeConnectedLinkIdsDirected => _startNodeConnectedLinkIdsDirected;
 
 
         /// <summary>
-        /// link가 끝나는 점의 node id
+        /// link가 끝나는 점의 node ID
         /// </summary>
-        public long EndNodeId { get; }
+        public long EndNodeID { get; }
         public FlatPoint EndNode => Geometry.Last();
         private HashSet<long> _endNodeConnectedLinkIdsDirected { get; set; }
         /// <summary>
