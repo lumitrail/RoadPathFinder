@@ -57,6 +57,7 @@
         /// <param name="id"></param>
         /// <param name="cancellationTokenSource"></param>
         /// <returns></returns>
+        /// <exception cref="ArgumentNullException"></exception>
         public async Task<bool> TryAcquireWritingAfterWait(
             TResourceID id,
             CancellationTokenSource? cancellationTokenSource = null)
@@ -79,5 +80,19 @@
 
             return writingAcquired;
         }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
+        /// <exception cref="ArgumentNullException"></exception>
+        public bool TryAcquireWriting(TResourceID id)
+        {
+            ArgumentNullException.ThrowIfNull(id, nameof(id));
+            return !_reads.IsUsed(id)
+                    && _writes.TryAcquire(id);
+        }
+
     }
 }
