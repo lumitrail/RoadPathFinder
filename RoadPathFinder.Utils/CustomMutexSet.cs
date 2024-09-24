@@ -1,32 +1,11 @@
 ﻿namespace RoadPathFinder.Utils
 {
-    public class CustomMutexSet<TResourceID>
+    public class CustomMutexSet<TResourceID> : PollingCommons
         where TResourceID : notnull
     {
-        /// <summary>
-        /// wait granularity, 최소 1ms, 최대 30초
-        /// </summary>
-        public int PollingIntervalMs
-        {
-            get => _pollingIntervalMs;
-            set => _pollingIntervalMs = Math.Min(Math.Max(1, value), 30000);
-        }
-        private int _pollingIntervalMs = 10;
-
-        /// <summary>
-        /// wait timeout, 최소 10ms, 최대 1시간
-        /// </summary>
-        public int DefaultWaitTimeoutMs
-        {
-            get => _defaultWaitTimeoutMs;
-            set => _defaultWaitTimeoutMs = Math.Min(Math.Max(10, value), 3600000);
-        }
-        private int _defaultWaitTimeoutMs = 10000;
-
         private const char V = '\n';
         private System.Collections.Concurrent
-            .ConcurrentDictionary<TResourceID, char> _tasksOngoing { get; }
-            = new();
+            .ConcurrentDictionary<TResourceID, char> _tasksOngoing { get; } = new();
 
 
         /// <summary>
@@ -46,31 +25,23 @@
 
             if (cancellationTokenSource == null)
             {
-                while (_tasksOngoing.ContainsKey(id))
+                while (_tasksOngoing.ContainsKey(id)
+                    && !IsTimeout(startTime))
                 {
-                    if (IsTimeout(startTime))
-                    {
-                        // timeout
-                        return (DateTime.Now - startTime).TotalMilliseconds;
-                    }
                     await Task.Delay(PollingIntervalMs);
                 }
             }
             else
             {
-                while (_tasksOngoing.ContainsKey(id))
+                while (_tasksOngoing.ContainsKey(id)
+                    && !cancellationTokenSource.IsCancellationRequested
+                    && !IsTimeout(startTime))
                 {
-                    if (cancellationTokenSource.IsCancellationRequested
-                        || IsTimeout(startTime))
-                    {
-                        // canceled OR timeout
-                        return (DateTime.Now - startTime).TotalMilliseconds;
-                    }
                     await Task.Delay(PollingIntervalMs);
                 }
             }
 
-            return (DateTime.Now - startTime).TotalMilliseconds; ;
+            return GetElapsedTimeMs(startTime);
         }
 
         /// <summary>
@@ -111,33 +82,35 @@
             
             DateTime startTime = DateTime.Now;
 
+            bool added = false;
+
             if (cancellationTokenSource == null)
             {
-                while (_tasksOngoing.TryAdd(id, V))
+                while (!IsTimeout(startTime))
                 {
-                    if (IsTimeout(startTime))
+                    added = _tasksOngoing.TryAdd(id, V);
+                    if (added)
                     {
-                        // timeout
-                        return false;
+                        break;
                     }
                     await Task.Delay(PollingIntervalMs);
                 }
             }
             else
             {
-                while (_tasksOngoing.TryAdd(id, V))
+                while (!cancellationTokenSource.IsCancellationRequested
+                    && !IsTimeout(startTime))
                 {
-                    if (cancellationTokenSource.IsCancellationRequested
-                        || IsTimeout(startTime))
+                    added = _tasksOngoing.TryAdd(id, V);
+                    if (added)
                     {
-                        // canceled OR timeout
-                        return false;
+                        break;
                     }
                     await Task.Delay(PollingIntervalMs);
                 }
             }
 
-            return true;
+            return added;
         }
 
         /// <summary>
@@ -146,7 +119,7 @@
         /// <param name="id"></param>
         /// <returns></returns>
         /// <exception cref="ArgumentNullException"></exception>
-        public void TryRelease(TResourceID id)
+        public void Release(TResourceID id)
         {
             ArgumentNullException.ThrowIfNull(id, nameof(id));
             _tasksOngoing.Remove(id, out _);
@@ -159,11 +132,6 @@
         public TResourceID[] GetLockedResources()
         {
             return _tasksOngoing.Keys.ToArray();
-        }
-
-        private bool IsTimeout(DateTime startTime)
-        {
-            return (DateTime.Now - startTime).TotalMilliseconds >= DefaultWaitTimeoutMs;
         }
     }
 }

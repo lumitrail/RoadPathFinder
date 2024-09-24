@@ -31,11 +31,19 @@
             return await _singleMutexSet.Wait(KEY, cancellationTokenSource);
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <returns></returns>
         public bool IsLocked()
         {
             return _singleMutexSet.IsLocked(KEY);
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <returns></returns>
         public bool TryAcquire()
         {
             return _singleMutexSet.TryAcquire(KEY);
@@ -52,9 +60,12 @@
             return await _singleMutexSet.TryAcquireAfterWait(KEY, cancellationTokenSource);
         }
 
-        public void TryRelease()
+        /// <summary>
+        /// 
+        /// </summary>
+        public void Release()
         {
-            _singleMutexSet.TryRelease(KEY);
+            _singleMutexSet.Release(KEY);
         }
     }
 }
