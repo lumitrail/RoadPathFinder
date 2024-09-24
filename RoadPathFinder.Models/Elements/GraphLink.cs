@@ -158,7 +158,7 @@ namespace RoadPathFinder.Models.Elements
         /// <summary>
         /// 이 링크가 막다른 길일 경우 되돌아 나올 수 있게 함
         /// </summary>
-        public void MakeReversible()
+        internal void MakeReversible()
         {
             if (_startNodeConnectedLinkIDs.Count == 0)
             {
