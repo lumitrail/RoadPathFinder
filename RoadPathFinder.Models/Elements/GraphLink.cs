@@ -1,4 +1,6 @@
-﻿using SmallGeometry.Euclidean;
+﻿using System.Collections.Concurrent;
+
+using SmallGeometry.Euclidean;
 using SmallGeometry.Geographic;
 
 namespace RoadPathFinder.Models.Elements
@@ -21,7 +23,6 @@ namespace RoadPathFinder.Models.Elements
         /// <remarks>진출 시 해당 링크들의 end node를 통하는 경우 음수 값</remarks>
         public IReadOnlySet<long> StartNodeConnectedLinkIDs => _startNodeConnectedLinkIDs;
 
-
         /// <summary>ID of node where link ends at</summary>
         public long EndNodeID { get; }
         /// <summary>position of end node</summary>
@@ -30,10 +31,10 @@ namespace RoadPathFinder.Models.Elements
         /// <remarks>진출 시 해당 링크들의 end node를 통하는 경우 음수 값</remarks>
         public IReadOnlySet<long> EndNodeConnectedLinkIDs => _endNodeConnectedLinkIDs;
 
-
+        private ConcurrentQueue<long> _startNodeConnectedLinkIDsInput { get; set; } = new();
+        private ConcurrentQueue<long> _endNodeConnectedLinkIDsInput { get; set; } = new();
         /// <summary>accessible links from this link throgh the start node</summary>
         private HashSet<long> _startNodeConnectedLinkIDs { get; } = new();
-
         /// <summary>accessible links from this link throgh the end node</summary>
         private HashSet<long> _endNodeConnectedLinkIDs { get; } = new();
 
@@ -89,10 +90,10 @@ namespace RoadPathFinder.Models.Elements
         }
 
         /// <summary>
-        /// 이 링크에 연결된 링크일 경우 연결 정보 기록
+        /// 이 링크에 연결된 링크일 경우 연결 정보 기록, 완료 시 <see cref="ApplyConnectedLink"/> 해야 적용됨
         /// </summary>
         /// <param name="link"></param>
-        public bool AddConnectedLink(GraphLink link)
+        public bool RegisterConnectedLink(GraphLink link)
         {
             if (link == null
                 || link.ID == ID)
@@ -107,13 +108,13 @@ namespace RoadPathFinder.Models.Elements
             {
                 if (StartNodeID == link.StartNodeID) // 다음 거 순진행
                 {
-                    _startNodeConnectedLinkIDs.Add(link.ID);
+                    _startNodeConnectedLinkIDsInput.Enqueue(link.ID);
                     isAdded = true;
                 }
                 if (!link.IsOneway
                     && StartNodeID == link.EndNodeID) // 다음 거 역진행
                 {
-                    _startNodeConnectedLinkIDs.Add(-link.ID);
+                    _startNodeConnectedLinkIDsInput.Enqueue(-link.ID);
                     isAdded = true;
                 }
             }
@@ -121,17 +122,37 @@ namespace RoadPathFinder.Models.Elements
             // 지금 거 순진행
             if (EndNodeID == link.StartNodeID) // 다음 거 순진행
             {
-                _endNodeConnectedLinkIDs.Add(link.ID);
+                _endNodeConnectedLinkIDsInput.Enqueue(link.ID);
                 isAdded = true;
             }
             if (!link.IsOneway
                 && EndNodeID == link.EndNodeID) // 다음 거 역진행
             {
-                _endNodeConnectedLinkIDs.Add(-link.ID);
+                _endNodeConnectedLinkIDsInput.Enqueue(-link.ID);
                 isAdded = true;
             }
 
             return isAdded;
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public void ApplyConnectedLink()
+        {
+            foreach (var linkID in _startNodeConnectedLinkIDsInput)
+            {
+                _startNodeConnectedLinkIDs.Add(linkID);
+            }
+
+            _startNodeConnectedLinkIDsInput = new();
+
+            foreach (var linkID in _endNodeConnectedLinkIDsInput)
+            {
+                _endNodeConnectedLinkIDs.Add(linkID);
+            }
+
+            _endNodeConnectedLinkIDsInput = new();
         }
 
         /// <summary>
