@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace RoadPathFinder.Utils
+﻿namespace RoadPathFinder.Utils
 {
     public class CustomSemaphoreSet<TResourceID> : PollingCommons
         where TResourceID : notnull
@@ -39,7 +33,7 @@ namespace RoadPathFinder.Utils
 
             if (cancellationTokenSource == null)
             {
-                while (_insiders.TryGetValue(id, out SemaphoreElem v))
+                while (_insiders.TryGetValue(id, out SemaphoreElem? v))
                 {
                     if (v.Count < MaxAllowed
                         || IsTimeout(startTime))
@@ -51,7 +45,7 @@ namespace RoadPathFinder.Utils
             }
             else
             {
-                while (_insiders.TryGetValue(id, out SemaphoreElem v))
+                while (_insiders.TryGetValue(id, out SemaphoreElem? v))
                 {
                     if (v.Count < MaxAllowed
                         || cancellationTokenSource.IsCancellationRequested
@@ -72,10 +66,24 @@ namespace RoadPathFinder.Utils
         /// <param name="id"></param>
         /// <returns></returns>
         /// <exception cref="ArgumentNullException"></exception>
+        public bool IsUsed(TResourceID id)
+        {
+            ArgumentNullException.ThrowIfNull(id, nameof(id));
+
+            return !_insiders.TryGetValue(id, out SemaphoreElem? e)
+                || e.Count == 0;
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
+        /// <exception cref="ArgumentNullException"></exception>
         public bool IsFull(TResourceID id)
         {
             ArgumentNullException.ThrowIfNull(id, nameof(id));
-            if (_insiders.TryGetValue(id, out SemaphoreElem v))
+            if (_insiders.TryGetValue(id, out SemaphoreElem? v))
             {
                 return v.Count >= MaxAllowed;
             }
@@ -86,7 +94,7 @@ namespace RoadPathFinder.Utils
         }
 
         /// <summary>
-        /// 
+        /// 한번 얻어 보기
         /// </summary>
         /// <param name="id"></param>
         /// <returns></returns>
@@ -94,13 +102,14 @@ namespace RoadPathFinder.Utils
         public bool TryAcquire(TResourceID id)
         {
             ArgumentNullException.ThrowIfNull(id, nameof(id));
-            if (_insiders.TryAdd(id, new SemaphoreElem(1)))
+
+            if (_insiders.TryGetValue(id, out SemaphoreElem? v))
             {
-                return true;
+                return v.TryUp(MaxAllowed);
             }
-            else if (_insiders.TryGetValue(id, out SemaphoreElem v))
+            else
             {
-                return SemaphoreElem
+                return _insiders.TryAdd(id, new SemaphoreElem(1));
             }
         }
 
@@ -119,36 +128,78 @@ namespace RoadPathFinder.Utils
 
             DateTime startTime = DateTime.Now;
 
+            var e = new SemaphoreElem(1);
+
             if (cancellationTokenSource == null)
             {
-                while (_insiders.TryGetValue(id, out SemaphoreElem e))
+                while (true)
                 {
-                    if (e.Count < MaxAllowed)
+                    if (_insiders.TryAdd(id, e))
                     {
-                        e.Up();
                         return true;
                     }
-                    if (IsTimeout(startTime))
+                    else if (_insiders.TryGetValue(id, out SemaphoreElem? v)
+                        && v.TryUp(MaxAllowed))
+                    {
+                        return true;
+                    }
+                    else if (IsTimeout(startTime))
                     {
                         return false;
                     }
                     await Task.Delay(PollingIntervalMs);
                 }
-                return _insiders.TryAdd(id, new SemaphoreElem(1));
             }
             else
             {
-                while (_insiders.TryGetValue(id, out SemaphoreElem e))
+                while (true)
+                {
+                    if (_insiders.TryAdd(id, e))
+                    {
+                        return true;
+                    }
+                    else if (_insiders.TryGetValue(id, out SemaphoreElem? v)
+                        && v.TryUp(MaxAllowed))
+                    {
+                        return true;
+                    }
+                    else if (IsTimeout(startTime))
+                    {
+                        return false;
+                    }
+                    await Task.Delay(PollingIntervalMs);
+                }
             }
         }
 
-        public bool TryIn(TResourceID id)
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="id"></param>
+        /// <exception cref="ArgumentNullException"></exception>
+        public bool TryRelease(TResourceID id)
         {
+            ArgumentNullException.ThrowIfNull(id, nameof(id));
+            if (_insiders.TryGetValue(id, out SemaphoreElem? v))
+            {
+                bool downOk = v.TryDown();
 
+                if (v.Count == 0
+                    && _insiders.TryRemove(id, out _))
+                {
+                    return true;
+                }
+                else if (downOk)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
 
-        private struct SemaphoreElem
+        private class SemaphoreElem
         {
             public object LockObj { get; } = new();
 
@@ -167,24 +218,33 @@ namespace RoadPathFinder.Utils
 
             public bool TryUp(int max)
             {
-
-            }
-
-            public int Up()
-            {
                 lock (LockObj)
                 {
-                    ++Count;
-                    return Count;
+                    if (Count >= max)
+                    {
+                        return false;
+                    }
+                    else
+                    {
+                        ++Count;
+                        return true;
+                    }
                 }
             }
 
-            public int Down()
+            public bool TryDown()
             {
                 lock (LockObj)
                 {
-                    --Count;
-                    return Count;
+                    if (Count <= 0)
+                    {
+                        return false;
+                    }
+                    else
+                    {
+                        --Count;
+                        return true;
+                    }
                 }
             }
         }

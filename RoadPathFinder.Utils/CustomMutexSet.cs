@@ -82,35 +82,40 @@
             
             DateTime startTime = DateTime.Now;
 
-            bool added = false;
-
             if (cancellationTokenSource == null)
             {
-                while (!IsTimeout(startTime))
+                while (true)
                 {
-                    added = _tasksOngoing.TryAdd(id, V);
-                    if (added)
+                    if (_tasksOngoing.TryAdd(id, V))
                     {
-                        break;
+                        return true;
+                    }
+                    else if (IsTimeout(startTime))
+                    {
+                        return false;
                     }
                     await Task.Delay(PollingIntervalMs);
                 }
             }
             else
             {
-                while (!cancellationTokenSource.IsCancellationRequested
-                    && !IsTimeout(startTime))
+                while (true)
                 {
-                    added = _tasksOngoing.TryAdd(id, V);
-                    if (added)
+                    if (_tasksOngoing.TryAdd(id, V))
                     {
-                        break;
+                        return true;
+                    }
+                    else if (cancellationTokenSource.IsCancellationRequested)
+                    {
+                        return false;
+                    }
+                    else if (IsTimeout(startTime))
+                    {
+                        return false;
                     }
                     await Task.Delay(PollingIntervalMs);
                 }
             }
-
-            return added;
         }
 
         /// <summary>
