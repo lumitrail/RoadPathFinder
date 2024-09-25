@@ -31,8 +31,11 @@ namespace RoadPathFinder.Models.Map
 
         public async Task<double> Init(int maxThreads = 4)
         {
-            double elapsedTime = 0;
+            //double elapsedTime = 0;
 
+            await Task.Delay(1);
+#warning 작업 필요
+            throw new NotImplementedException();
         }
     }
 }

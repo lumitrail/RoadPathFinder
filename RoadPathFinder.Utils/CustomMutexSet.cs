@@ -138,5 +138,13 @@
         {
             return _tasksOngoing.Keys.ToArray();
         }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public void ForceReleaseAll()
+        {
+            _tasksOngoing.Clear();
+        }
     }
 }

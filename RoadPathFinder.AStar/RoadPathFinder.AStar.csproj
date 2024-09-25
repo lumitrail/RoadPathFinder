@@ -12,7 +12,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\RoadPathFinder.Models\RoadPathFinder.Models.csproj" />
-    <ProjectReference Include="..\RoadPathFinder.Utils\RoadPathFinder.Utils.csproj" />
   </ItemGroup>
 
 </Project>

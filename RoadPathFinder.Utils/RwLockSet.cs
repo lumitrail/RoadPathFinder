@@ -7,7 +7,7 @@
     /// 4. 쓰기는 쓰기를 막음<br></br>
     /// </summary>
     /// <typeparam name="TResourceID">resource id</typeparam>
-    public class RwSemaphoreSet<TResourceID> : PollingCommons
+    public class RwLockSet<TResourceID> : PollingCommons
         where TResourceID : notnull
     {
         private CustomSemaphoreSet<TResourceID> _reads { get; } = new();
@@ -94,5 +94,20 @@
                     && _writes.TryAcquire(id);
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        public void ForceReleaseReads()
+        {
+            _reads.ForceReleaseAll();
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public void ForceReleaseWrites()
+        {
+            _writes.ForceReleaseAll();
+        }
     }
 }

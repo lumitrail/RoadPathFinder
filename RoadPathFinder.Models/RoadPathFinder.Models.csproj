@@ -10,8 +10,4 @@
     <PackageReference Include="SmallGeometry" Version="0.2.0" />
   </ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\RoadPathFinder.Utils\RoadPathFinder.Utils.csproj" />
-  </ItemGroup>
-
 </Project>

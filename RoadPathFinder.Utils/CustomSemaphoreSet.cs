@@ -198,6 +198,14 @@
             return false;
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        public void ForceReleaseAll()
+        {
+            _insiders.Clear();
+        }
+
 
         private class SemaphoreElem
         {
