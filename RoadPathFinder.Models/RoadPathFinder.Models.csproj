@@ -4,9 +4,11 @@
     <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <GenerateDocumentationFile>True</GenerateDocumentationFile>
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="MinimalLock" Version="1.0.0" />
     <PackageReference Include="SmallGeometry" Version="0.2.0" />
   </ItemGroup>
 

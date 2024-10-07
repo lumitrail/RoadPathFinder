@@ -1,5 +1,8 @@
 ﻿namespace RoadPathFinder.Models.Elements
 {
+    /// <summary>
+    /// Info
+    /// </summary>
     public class GraphLinkDetails
     {
         /// <summary>link ID</summary>
