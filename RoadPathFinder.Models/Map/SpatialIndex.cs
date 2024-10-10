@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using MinimalLock;
 
 using SmallGeometry.Euclidean;
+using SmallGeometry.Primitives;
 
 using RoadPathFinder.Models.Elements;
 
@@ -47,7 +48,7 @@ namespace RoadPathFinder.Models.Map
 
 
         /// <summary>
-        /// 
+        /// Mutex-managed init
         /// </summary>
         /// <param name="refresh"></param>
         /// <param name="maxThreads"></param>
@@ -64,11 +65,15 @@ namespace RoadPathFinder.Models.Map
             else if (await _initMutex.TryAcquireAfterWait())
             {
                 IsInitDone = false;
-
+                
+                DateTime startTime = DateTime.UtcNow;
                 var buildReport = BuildIndex(maxThreads);
-                initReport.Merge(buildReport);
+                DateTime endTime = DateTime.UtcNow;
 
                 IsInitDone = true;
+
+                initReport.Merge(buildReport);
+                initReport.Add(Report.ReportMessageType.Info, $"elapsed time {(endTime - startTime).TotalSeconds} seconds.");
 
                 if (_initMutex.TryRelease())
                 {
@@ -88,6 +93,72 @@ namespace RoadPathFinder.Models.Map
 
             return initReport;
         }
+
+        /// <summary>
+        /// From the center, get the links within maxDistance
+        /// </summary>
+        /// <param name="center"></param>
+        /// <param name="maxDistance"></param>
+        /// <returns>key: distance from center</returns>
+        public SortedDictionary<double, List<GraphLink>> SearchLinksWithinDistance(FlatPoint center, double maxDistance)
+        {
+            int tileRange = (int)(maxDistance / TileSideLength) + 1;
+            var tileSearchResult = SearchLinksNear(center, tileRange);
+
+            var result = new SortedDictionary<double, List<GraphLink>>();
+            foreach (var kv in tileSearchResult)
+            {
+                if (kv.Key <= maxDistance)
+                {
+                    result.TryAdd(kv.Key, kv.Value);
+                }
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// From the center, get the links within surrounding (2*range+1)^2 tiles.
+        /// </summary>
+        /// <param name="center"></param>
+        /// <param name="tileRange"></param>
+        /// <returns>key: distance from center</returns>
+        public SortedDictionary<double, List<GraphLink>> SearchLinksNear(FlatPoint center, int tileRange)
+        {
+            IEnumerable<string> tileKeys = GetSurroundingTileIndexKeys(center, tileRange);
+
+            var resultLinkIDs = new HashSet<long>();
+            foreach (string tileKey in tileKeys)
+            {
+                if (_tile.TryGetValue(tileKey, out HashSet<long>? tileLinkIDs))
+                {
+                    foreach (long linkID in tileLinkIDs)
+                    {
+                        resultLinkIDs.Add(linkID);
+                    }
+                }
+            }
+
+            var result = new SortedDictionary<double, List<GraphLink>>();
+            foreach (long linkID in resultLinkIDs)
+            {
+                if (_graph.TryGetValue(linkID, out GraphLink? link))
+                {
+                    FlatPoint nearestPoint = link.Geometry.GetNearestPoints(center).First().Value;
+                    double distance = center.GetDistance(nearestPoint);
+
+                    result.TryAdd(distance, new List<GraphLink>(2));
+
+                    if (result.TryGetValue(distance, out List<GraphLink>? linksOfDistance))
+                    {
+                        linksOfDistance.Add(link);
+                    }
+                }
+            }
+
+            return result;
+        }
+
 
         /// <summary>
         /// fills <see cref="_tile"/>
@@ -125,6 +196,7 @@ namespace RoadPathFinder.Models.Map
                 {
                     report.Add(Report.ReportMessageType.Error,
                         $"Tile {kv.Key} confirm failed.");
+                    IsInitFail = true;
                 }
             }
 
@@ -151,11 +223,49 @@ namespace RoadPathFinder.Models.Map
                     {
                         report.Add(Report.ReportMessageType.Error,
                             $"Tile {key} init failed.");
+                        IsInitFail = true;
                     }
                 }
             }
         }
 
+        /// <summary>
+        /// From the tile containing center, get tile index keys of surrounding (2*range+1)^2 tiles;
+        /// </summary>
+        /// <param name="center"></param>
+        /// <param name="tileRange"></param>
+        /// <returns></returns>
+        private IEnumerable<string> GetSurroundingTileIndexKeys(FlatPoint center, int tileRange)
+        {
+            tileRange = Math.Max(0, tileRange);
+
+            var eastWestVectors = new List<Vector2D>(2 * tileRange + 1);
+            var northSouthVectors = new List<Vector2D>(2 * tileRange + 1);
+
+            for (int i = 0; i <= tileRange; ++i)
+            {
+                var east = new Vector2D(tileRange * TileSideLength, 0);
+                eastWestVectors.Add(east);
+                eastWestVectors.Add(-east);
+
+                var north = new Vector2D(0, tileRange * TileSideLength);
+                northSouthVectors.Add(north);
+                northSouthVectors.Add(-north);
+            }
+
+            var resultSet = new HashSet<string>(eastWestVectors.Count * northSouthVectors.Count + 1);
+
+            foreach (Vector2D northSouthVec in northSouthVectors)
+            {
+                foreach (Vector2D eastWestVec in eastWestVectors)
+                {
+                    FlatPoint keyPoint = center + northSouthVec + eastWestVec;
+                    resultSet.Add(GetIndexKey(keyPoint));
+                }
+            }
+
+            return resultSet;
+        }
 
         private string GetIndexKey(FlatPoint fp)
         {
