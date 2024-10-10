@@ -9,7 +9,7 @@
 
   <ItemGroup>
     <PackageReference Include="MinimalLock" Version="1.0.0" />
-    <PackageReference Include="SmallGeometry" Version="0.2.0" />
+    <PackageReference Include="SmallGeometry" Version="0.2.1" />
   </ItemGroup>
 
 </Project>

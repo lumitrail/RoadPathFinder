@@ -26,13 +26,15 @@ namespace RoadPathFinder.Models.Map
         public bool IsInitInProgress => _initMutex.IsLocked();
         public bool IsInitFail { get; private set; } = false;
 
-
+        private static string ReportTitle => "SpatialIndex";
         private IReadOnlyDictionary<long, GraphLink> _graph { get; }
         private Dictionary<string, HashSet<long>> _tile { get; set; } = new();
         private MutexSingle _initMutex { get; } = new();
 
 
-        public SpatialIndex(IReadOnlyDictionary<long, GraphLink> graph, double tileSideLength = 100)
+        public SpatialIndex(
+            IReadOnlyDictionary<long, GraphLink> graph,
+            double tileSideLength = 100)
         {
             ArgumentNullException.ThrowIfNull(graph, nameof(graph));
             _graph = graph;
@@ -44,71 +46,114 @@ namespace RoadPathFinder.Models.Map
         }
 
 
-        public async Task<ReportMessages> Init(bool refresh, int maxThreads)
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="refresh"></param>
+        /// <param name="maxThreads"></param>
+        /// <returns></returns>
+        public async Task<Report> Init(bool refresh, int maxThreads)
         {
-            var result = new ReportMessages();
+            var initReport = new Report(ReportTitle);
 
             if (IsInitDone
                 && !refresh)
             {
-                result.Normal.Add("Init already done.");
+                initReport.Add(Report.ReportMessageType.Info, "Init already done.");
             }
             else if (await _initMutex.TryAcquireAfterWait())
             {
+                IsInitDone = false;
 
-
-
-
+                var buildReport = BuildIndex(maxThreads);
+                initReport.Merge(buildReport);
 
                 IsInitDone = true;
 
                 if (_initMutex.TryRelease())
                 {
-                    result.Normal.Add("OK");
+                    initReport.Add(Report.ReportMessageType.Info, "OK");
                 }
                 else
                 {
-                    result.Fatal.Add("Init exit incompletely.");
+                    initReport.Add(Report.ReportMessageType.Error,
+                        "Init exit without mutex released.");
                 }
             }
             else
             {
-                result.Normal.Add("Init already in progress.");
-                result.Warning.Add("Init waiting timeout.");
+                initReport.Add(Report.ReportMessageType.Info, "Init already in progress.");
+                initReport.Add(Report.ReportMessageType.Warning, "Init waiting timeout.");
             }
 
-            return result;
+            return initReport;
         }
 
-
-        private Dictionary<string, HashSet<long>> BuildIndex(
-            int maxThreads,
-            out ReportMessages report)
+        /// <summary>
+        /// fills <see cref="_tile"/>
+        /// </summary>
+        /// <param name="maxThreads"></param>
+        /// <returns></returns>
+        private Report BuildIndex(int maxThreads)
         {
-            var tempIndex = new ConcurrentDictionary<string, ConcurrentBag<long>>();
+            var tempTile = new ConcurrentDictionary<string, ConcurrentBag<long>>();
+            var report = new Report(ReportTitle);
 
+            // build tempTile
             if (maxThreads > 1)
             {
-                Parallel.ForEach(_graph.Values, new ParallelOptions { MaxDegreeOfParallelism = maxThreads },
-                    link =>
-                    {
-
-                    });
+                Parallel.ForEach(
+                    _graph.Values,
+                    new ParallelOptions { MaxDegreeOfParallelism = maxThreads },
+                    AddToTempTile);
             }
             else
             {
-
+                foreach (var link in _graph.Values)
+                {
+                    AddToTempTile(link);
+                }
             }
 
+            _tile.Clear();
 
-            
-        }
+            // move to _tile
+            foreach (var kv in tempTile)
+            {
+                var linkIDs = kv.Value.ToHashSet();
+                if (!_tile.TryAdd(kv.Key, linkIDs))
+                {
+                    report.Add(Report.ReportMessageType.Error,
+                        $"Tile {kv.Key} confirm failed.");
+                }
+            }
 
-        private void AddToTile(
-            GraphLink link,
-            ref ConcurrentDictionary<string, ConcurrentBag<long>> tempIndex)
-        {
-            FlatLine l = link.Geometry.Interpolate(TileSideLength);
+            return report;
+
+            ///////////////////////////////////////////////////////////////////
+            void AddToTempTile(GraphLink link)
+            {
+                FlatLine l = link.Geometry.Interpolate(TileSideLength);
+
+                foreach (FlatPoint fp in l)
+                {
+                    string key = GetIndexKey(fp);
+
+                    tempTile.TryAdd(key, new ConcurrentBag<long>());
+
+                    if (tempTile.TryGetValue(
+                        key,
+                        out ConcurrentBag<long>? linkIDs))
+                    {
+                        linkIDs.Add(link.ID);
+                    }
+                    else
+                    {
+                        report.Add(Report.ReportMessageType.Error,
+                            $"Tile {key} init failed.");
+                    }
+                }
+            }
         }
 
 
