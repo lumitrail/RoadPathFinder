@@ -29,6 +29,12 @@ namespace RoadPathFinder.Models.Map
             _grid = new(_graph);
         }
 
+        /// <summary>
+        /// init includes: spatial index init
+        /// </summary>
+        /// <param name="maxThreads"></param>
+        /// <returns></returns>
+        /// <exception cref="NotImplementedException"></exception>
         public async Task<double> Init(int maxThreads = 4)
         {
             //double elapsedTime = 0;
