@@ -38,7 +38,6 @@ namespace RoadPathFinder.Models
             return result;
         }
 
-
         /// <summary>
         /// 
         /// </summary>
@@ -153,7 +152,7 @@ namespace RoadPathFinder.Models
             Info,
             Warning,
             Error,
-            Fatal
+            Fatal,
         };
     }
 }

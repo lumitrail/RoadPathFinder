@@ -32,16 +32,14 @@ namespace RoadPathFinder.Models.Map
         /// <summary>
         /// init includes: spatial index init
         /// </summary>
+        /// <param name="refresh"></param>
         /// <param name="maxThreads"></param>
         /// <returns></returns>
-        /// <exception cref="NotImplementedException"></exception>
-        public async Task<double> Init(int maxThreads = 4)
+        public async Task<Report> Init(bool refresh = false, int maxThreads = 4)
         {
-            //double elapsedTime = 0;
-
-            await Task.Delay(1);
-#warning 작업 필요
-            throw new NotImplementedException();
+            Task<Report> spatialIndexInit = _grid.Init(refresh, maxThreads);
+            Report spatialIndexInitReport = await spatialIndexInit;
+            return spatialIndexInitReport;
         }
     }
 }
