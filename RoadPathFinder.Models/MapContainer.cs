@@ -11,6 +11,6 @@ namespace RoadPathFinder.Models
 {
     public class MapContainer
     {
-        public ConcurrentDictionary<string, Map.GraphSet> GraphSets { get; } = new();
+        public ConcurrentDictionary<string, GraphSet> GraphSets { get; } = new();
     }
 }

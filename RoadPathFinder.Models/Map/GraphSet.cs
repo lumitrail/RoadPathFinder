@@ -1,17 +1,30 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using SmallGeometry.Euclidean;
+using SmallGeometry.Exceptions;
 
 using RoadPathFinder.Models.Elements;
 
 namespace RoadPathFinder.Models.Map
 {
+    /// <summary>
+    /// Map with spatial index
+    /// </summary>
     public class GraphSet
     {
+        /// <summary>
+        /// 
+        /// </summary>
+        public SmallGeometry.CoordinateSystem CoordinateSystem { get; }
+        /// <summary>
+        /// 
+        /// </summary>
         public IReadOnlyDictionary<long, GraphLink> Graph => _graph;
+        /// <summary>
+        /// 
+        /// </summary>
         public GraphSetDetails MapInfo { get; private set; } = new GraphSetDetails { };
+        /// <summary>
+        /// is ready to use
+        /// </summary>
         public bool IsInitDone => _grid != null && _grid.IsInitDone;
 
         private Dictionary<long, GraphLink> _graph { get; set; }
@@ -22,11 +35,19 @@ namespace RoadPathFinder.Models.Map
         /// 
         /// </summary>
         /// <param name="links"></param>
+        /// <exception cref="ArgumentNullException">links is null</exception>
+        /// <exception cref="CoordinateSystemDiscordanceException">links has links of multiple coordinate systems</exception>
         public GraphSet(IEnumerable<GraphLink> links)
         {
             ArgumentNullException.ThrowIfNull(links, nameof(links));
+            var coordinateSystems = links.Select(l => l.Geometry.CoordinateSystem).Distinct();
+            if (coordinateSystems.Count() != 1)
+            {
+                throw new CoordinateSystemDiscordanceException(coordinateSystems);
+            }
+            CoordinateSystem = coordinateSystems.First();
             _graph = links.ToDictionary(l => l.ID);
-            _grid = new(_graph);
+            _grid = new(Graph);
         }
 
         /// <summary>
@@ -41,5 +62,24 @@ namespace RoadPathFinder.Models.Map
             Report spatialIndexInitReport = await spatialIndexInit;
             return spatialIndexInitReport;
         }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="center"></param>
+        /// <param name="maxDistanceMeter"></param>
+        /// <returns></returns>
+        /// <exception cref="CoordinateSystemDiscordanceException"></exception>
+        public SortedDictionary<double, List<GraphLink>> SearchNearLinks(FlatPoint center, double maxDistanceMeter)
+        {
+            if (center.CoordinateSystem != CoordinateSystem)
+            {
+                throw new CoordinateSystemDiscordanceException(CoordinateSystem, center.CoordinateSystem);
+            }
+            var result = _grid.SearchLinksWithinDistance(center, maxDistanceMeter);
+            return result;
+        }
+
+
     }
 }

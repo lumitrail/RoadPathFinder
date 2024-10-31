@@ -39,7 +39,7 @@ namespace RoadPathFinder.Models
         }
 
         /// <summary>
-        /// 
+        /// thread-safe report addition
         /// </summary>
         /// <param name="message"></param>
         /// <returns></returns>
@@ -53,7 +53,7 @@ namespace RoadPathFinder.Models
         }
 
         /// <summary>
-        /// 
+        /// thread-safe report addition
         /// </summary>
         /// <param name="type"></param>
         /// <param name="message"></param>

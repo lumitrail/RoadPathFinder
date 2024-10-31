@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Collections.Concurrent;
 
 using MinimalLock;
 
@@ -205,6 +200,13 @@ namespace RoadPathFinder.Models.Map
             ///////////////////////////////////////////////////////////////////
             void AddToTempTile(GraphLink link)
             {
+                if (link == null)
+                {
+                    report.Add(Report.ReportMessageType.Warning,
+                        "null link is given to tempTile");
+                    return;
+                }
+
                 FlatLine l = link.Geometry.Interpolate(TileSideLength);
 
                 foreach (FlatPoint fp in l)
