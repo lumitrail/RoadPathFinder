@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 using RoadPathFinder.Models;
+using RoadPathFinder.Models.Composites;
 using RoadPathFinder.Models.Map;
 
 namespace RoadPathFinder.Agents
@@ -15,15 +16,17 @@ namespace RoadPathFinder.Agents
         /// 
         /// </summary>
         /// <param name="map"></param>
-        /// <param name="fromLinkID"></param>
-        /// <param name="toLinkID"></param>
+        /// <param name="fromLink"></param>
+        /// <param name="toLink"></param>
         /// <returns></returns>
         /// <exception cref="ArgumentNullException"></exception>
-        public static SearchResult FindPath(GraphSet map, long fromLinkID, long toLinkID)
+        public static SearchResult FindPath(MapSpace map,
+            LinkDirectionDesignation fromLink,
+            LinkDirectionDesignation toLink)
         {
             ArgumentNullException.ThrowIfNull(map, nameof(map));
 
-
+            throw new NotImplementedException();
         }
     }
 }

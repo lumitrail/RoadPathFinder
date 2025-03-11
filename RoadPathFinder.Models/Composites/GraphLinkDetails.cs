@@ -1,4 +1,4 @@
-﻿namespace RoadPathFinder.Models.Elements
+﻿namespace RoadPathFinder.Models.Composites
 {
     /// <summary>
     /// Info

@@ -7,6 +7,9 @@ namespace RoadPathFinder.Agents.AStarIntermediates
     internal class RouteTreeNode
     {
         public GraphLink Link { get; }
+        /// <summary>
+        /// 
+        /// </summary>
         public long DirectionalLinkID { get; }
 
         public RouteTreeNode? ParentNode { get; } = null;

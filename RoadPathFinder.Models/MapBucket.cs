@@ -9,8 +9,8 @@ using RoadPathFinder.Models.Map;
 
 namespace RoadPathFinder.Models
 {
-    public class MapContainer
+    public class MapBucket
     {
-        public ConcurrentDictionary<string, GraphSet> GraphSets { get; } = new();
+        public ConcurrentDictionary<string, MapSpace> GraphSets { get; } = new();
     }
 }

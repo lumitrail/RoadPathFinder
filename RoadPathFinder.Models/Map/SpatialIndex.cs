@@ -1,16 +1,21 @@
 ﻿using System.Collections.Concurrent;
 
+using Microsoft.Extensions.Logging;
+
 using MinimalLock;
 
 using SmallGeometry.Euclidean;
 using SmallGeometry.Primitives;
 
 using RoadPathFinder.Models.Elements;
+using RoadPathFinder.Models.Utils;
 
 namespace RoadPathFinder.Models.Map
 {
     internal class SpatialIndex
     {
+        public Guid MapID { get; }
+
         public double TileSideLength
         {
             get => _tileSideLength;
@@ -22,16 +27,18 @@ namespace RoadPathFinder.Models.Map
         public bool IsInitInProgress => _initMutex.IsLocked();
         public bool IsInitFail { get; private set; } = false;
 
-        private static string ReportTitle => "SpatialIndex";
         private IReadOnlyDictionary<long, GraphLink> _graph { get; }
         private Dictionary<string, HashSet<long>> _tile { get; set; } = new();
         private MutexSingle _initMutex { get; } = new();
 
 
         public SpatialIndex(
+            Guid mapID,
             IReadOnlyDictionary<long, GraphLink> graph,
             double tileSideLength = 100)
         {
+            MapID = mapID;
+
             ArgumentNullException.ThrowIfNull(graph, nameof(graph));
             _graph = graph;
 
@@ -47,10 +54,13 @@ namespace RoadPathFinder.Models.Map
         /// </summary>
         /// <param name="refresh"></param>
         /// <param name="maxThreads"></param>
+        /// <param name="logger"></param>
         /// <returns></returns>
-        public async Task<Report> Init(bool refresh, int maxThreads)
+        public async Task Init(bool refresh, int maxThreads, ILogger? logger)
         {
-            var initReport = new Report(ReportTitle);
+            object[] loggerCommons = [MapID, "Spatial Index Init"];
+
+            logger?.LogDebug("Starting", loggerCommons);
 
             if (IsInitDone
                 && !refresh)

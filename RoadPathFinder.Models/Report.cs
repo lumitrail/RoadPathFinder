@@ -2,7 +2,7 @@
 
 namespace RoadPathFinder.Models
 {
-    public class Report
+    public class Reportu
     {
         public string Title { get; }
 

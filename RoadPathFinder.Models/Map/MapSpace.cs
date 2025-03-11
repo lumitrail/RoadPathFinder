@@ -2,14 +2,21 @@
 using SmallGeometry.Exceptions;
 
 using RoadPathFinder.Models.Elements;
+using Microsoft.Extensions.Logging;
+using RoadPathFinder.Models.Utils;
 
 namespace RoadPathFinder.Models.Map
 {
     /// <summary>
     /// Map with spatial index
     /// </summary>
-    public class GraphSet
+    public class MapSpace
     {
+        /// <summary>
+        /// 
+        /// </summary>
+        public Guid ID { get; } = new();
+
         /// <summary>
         /// 
         /// </summary>
@@ -37,7 +44,7 @@ namespace RoadPathFinder.Models.Map
         /// <param name="links"></param>
         /// <exception cref="ArgumentNullException">links is null</exception>
         /// <exception cref="CoordinateSystemDiscordanceException">links has links of multiple coordinate systems</exception>
-        public GraphSet(IEnumerable<GraphLink> links)
+        public MapSpace(IEnumerable<GraphLink> links)
         {
             ArgumentNullException.ThrowIfNull(links, nameof(links));
             var coordinateSystems = links.Select(l => l.Geometry.CoordinateSystem).Distinct();
@@ -55,8 +62,9 @@ namespace RoadPathFinder.Models.Map
         /// </summary>
         /// <param name="refresh"></param>
         /// <param name="maxThreads"></param>
+        /// <param name="logger"></param>
         /// <returns></returns>
-        public async Task<Report> Init(bool refresh = false, int maxThreads = 4)
+        public async Task Init(bool refresh = false, int maxThreads = 4, ILogger? logger = null)
         {
             Task<Report> spatialIndexInit = _grid.Init(refresh, maxThreads);
             Report spatialIndexInitReport = await spatialIndexInit;
