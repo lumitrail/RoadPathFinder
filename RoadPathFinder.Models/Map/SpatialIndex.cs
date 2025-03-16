@@ -55,48 +55,42 @@ namespace RoadPathFinder.Models.Map
         /// <param name="refresh"></param>
         /// <param name="maxThreads"></param>
         /// <param name="logger"></param>
-        /// <returns></returns>
-        public async Task Init(bool refresh, int maxThreads, ILogger? logger)
+        /// <returns>true when success</returns>
+        public async Task<bool> Init(bool refresh, int maxThreads, ILogger? logger)
         {
-            object[] loggerCommons = [MapID, "Spatial Index Init"];
+            var initID = new Guid();
+            object[] initLoggerInfo = [MapID, "Spatial Index Init", initID];
 
-            logger?.LogDebug("Starting", loggerCommons);
+            logger?.LogInformation("Starting", initLoggerInfo);
 
             if (IsInitDone
                 && !refresh)
             {
-                initReport.Add(Report.ReportMessageType.Info, "Init already done.");
+                logger?.LogInformation("Init already done.", initLoggerInfo);
             }
             else if (await _initMutex.TryAcquireAfterWait())
             {
                 IsInitDone = false;
                 
                 DateTime startTime = DateTime.UtcNow;
-                var buildReport = BuildIndex(maxThreads);
+                BuildIndex(maxThreads, logger);
                 DateTime endTime = DateTime.UtcNow;
 
                 IsInitDone = true;
 
-                initReport.Merge(buildReport);
-                initReport.Add(Report.ReportMessageType.Info, $"elapsed time {(endTime - startTime).TotalSeconds} seconds.");
+                logger?.LogInformation($"Elapsed {(endTime - startTime).TotalMilliseconds} ms.", initLoggerInfo);
 
-                if (_initMutex.TryRelease())
+                if (!_initMutex.TryRelease())
                 {
-                    initReport.Add(Report.ReportMessageType.Info, "OK");
-                }
-                else
-                {
-                    initReport.Add(Report.ReportMessageType.Error,
-                        "Init exit without mutex released.");
+                    logger?.LogError("Init returned without mutex released.", initLoggerInfo);
                 }
             }
             else
             {
-                initReport.Add(Report.ReportMessageType.Info, "Init already in progress.");
-                initReport.Add(Report.ReportMessageType.Warning, "Init waiting timeout.");
+                logger?.LogInformation("Init already in progress.", initLoggerInfo);
             }
 
-            return initReport;
+            return IsInitDone && !IsInitFail;
         }
 
         /// <summary>
@@ -169,11 +163,12 @@ namespace RoadPathFinder.Models.Map
         /// fills <see cref="_tile"/>
         /// </summary>
         /// <param name="maxThreads"></param>
+        /// <param name="logger"></param>
         /// <returns></returns>
-        private Report BuildIndex(int maxThreads)
+        private void BuildIndex(int maxThreads, ILogger? logger)
         {
             var tempTile = new ConcurrentDictionary<string, ConcurrentBag<long>>();
-            var report = new Report(ReportTitle);
+            object[] buildLoggerInfo = [MapID, "Building index"];
 
             // build tempTile
             if (maxThreads > 1)
@@ -199,21 +194,17 @@ namespace RoadPathFinder.Models.Map
                 var linkIDs = kv.Value.ToHashSet();
                 if (!_tile.TryAdd(kv.Key, linkIDs))
                 {
-                    report.Add(Report.ReportMessageType.Error,
-                        $"Tile {kv.Key} confirm failed.");
+                    logger?.LogError($"Tile {kv.Key} confirm failed.", buildLoggerInfo);
                     IsInitFail = true;
                 }
             }
-
-            return report;
 
             ///////////////////////////////////////////////////////////////////
             void AddToTempTile(GraphLink link)
             {
                 if (link == null)
                 {
-                    report.Add(Report.ReportMessageType.Warning,
-                        "null link is given to tempTile");
+                    logger?.LogWarning("null link is given to tempTile", buildLoggerInfo);
                     return;
                 }
 
@@ -233,8 +224,7 @@ namespace RoadPathFinder.Models.Map
                     }
                     else
                     {
-                        report.Add(Report.ReportMessageType.Error,
-                            $"Tile {key} init failed.");
+                        logger?.LogError($"Tile {key} init failed.", buildLoggerInfo);
                         IsInitFail = true;
                     }
                 }
