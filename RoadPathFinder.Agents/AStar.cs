@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 using RoadPathFinder.Models;
-using RoadPathFinder.Models.Composites;
+using RoadPathFinder.Models.Elements;
 using RoadPathFinder.Models.Map;
 
 namespace RoadPathFinder.Agents
@@ -16,13 +16,15 @@ namespace RoadPathFinder.Agents
         /// 
         /// </summary>
         /// <param name="map"></param>
-        /// <param name="fromLink"></param>
-        /// <param name="toLink"></param>
+        /// <param name="fromLinkID"></param>
+        /// <param name="fromLinkDirection"></param>
+        /// <param name="toLinkID"></param>
+        /// <param name="toLinkDirection"></param>
         /// <returns></returns>
-        /// <exception cref="ArgumentNullException"></exception>
+        /// <exception cref="NotImplementedException"></exception>
         public static SearchResult FindPath(MapSpace map,
-            LinkDirectionDesignation fromLink,
-            LinkDirectionDesignation toLink)
+            long fromLinkID, EDirection fromLinkDirection,
+            long toLinkID, EDirection toLinkDirection)
         {
             ArgumentNullException.ThrowIfNull(map, nameof(map));
 

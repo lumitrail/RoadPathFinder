@@ -7,10 +7,8 @@ namespace RoadPathFinder.Agents.AStarIntermediates
     internal class RouteTreeNode
     {
         public GraphLink Link { get; }
-        /// <summary>
-        /// 
-        /// </summary>
-        public long DirectionalLinkID { get; }
+        
+        public bool IsForwardDirection { get; }
 
         public RouteTreeNode? ParentNode { get; } = null;
         /// <summary>
@@ -28,12 +26,12 @@ namespace RoadPathFinder.Agents.AStarIntermediates
         /// 
         /// </summary>
         /// <param name="link"></param>
-        /// <param name="traversingLinkReversal"></param>
+        /// <param name="IsForwardDirection"></param>
         /// <param name="destination"></param>
         /// <exception cref="ArgumentNullException">link</exception>
         public RouteTreeNode(
             GraphLink link,
-            bool traversingLinkReversal,
+            bool IsForwardDirection,
             FlatPoint destination)
         {
             ArgumentNullException.ThrowIfNull(link, nameof(link));
@@ -42,17 +40,13 @@ namespace RoadPathFinder.Agents.AStarIntermediates
 
             AccumulatedDistance = link.Geometry.GetLength();
 
-            if (traversingLinkReversal)
+            if (IsForwardDirection)
             {
-                // reversal
-                DirectionalLinkID = -link.ID;
-                HeuristicDistance = destination.GetDistance(link.StartNode);
+                HeuristicDistance = destination.GetDistance(link.Last());
             }
             else
             {
-                // straight
-                DirectionalLinkID = link.ID;
-                HeuristicDistance = destination.GetDistance(link.EndNode);
+                HeuristicDistance = destination.GetDistance(link.First());
             }
         }
 
@@ -68,7 +62,7 @@ namespace RoadPathFinder.Agents.AStarIntermediates
             GraphLink link,
             RouteTreeNode parentNode,
             FlatPoint destination)
-            : this(link, !IsStraight(link, parentNode), destination)
+            : this(link, IsStraight(link, parentNode), destination)
         {
             ParentNode = parentNode;
             AccumulatedDistance += parentNode?.AccumulatedDistance ?? 0;
@@ -101,19 +95,6 @@ namespace RoadPathFinder.Agents.AStarIntermediates
             else
             {
                 throw new ArgumentException($"Link {link.ID}({link.StartNodeID}-{link.EndNodeID}) is not connected to parent link {parentNode.Link.ID}(->{parentEndNodeID})");
-            }
-        }
-
-
-        private long GetDirectionalEndNodeID()
-        {
-            if (DirectionalLinkID > 0)
-            {
-                return Link.EndNodeID;
-            }
-            else
-            {
-                return Link.StartNodeID;
             }
         }
     }
