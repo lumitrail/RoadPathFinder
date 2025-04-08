@@ -8,14 +8,11 @@ using System.Threading.Tasks;
 namespace RoadPathFinder.Agents.AStarIntermediates
 {
     /// <summary>
-    /// A* links to search next
+    /// next links to visit
     /// </summary>
-    /// <remarks>
-    /// not thread-safe
-    /// </remarks>
     internal class Candidates
     {
-        public int Count => _candidates.Count;
+        public int Count => _candidatesKeys.Count;
 
         /// <summary>
         /// key: total heuristic cost(AccumulatedDistance + HeuristicDistance)
@@ -28,6 +25,11 @@ namespace RoadPathFinder.Agents.AStarIntermediates
         /// </summary>
         private Dictionary<long, double> _candidatesKeys { get; } = new();
 
+
+        // 되어야 하는 것: 휴리스틱 cost로 정렬(double) -> route tree node
+        // 되어야 하는 것: id -> route tree node
+        // 이거 2차원인거 같은데
+        // 
 
         public Candidates()
         {

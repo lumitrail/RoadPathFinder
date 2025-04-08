@@ -24,7 +24,7 @@ namespace RoadPathFinder.Models.Map
         /// <summary>
         /// 
         /// </summary>
-        public IReadOnlyDictionary<long, GraphLink> Graph => _graph;
+        public IReadOnlyDictionary<string, GraphLink> Graph => _graph;
         /// <summary>
         /// 
         /// </summary>
@@ -34,7 +34,7 @@ namespace RoadPathFinder.Models.Map
         /// </summary>
         public bool IsInitDone => _grid != null && _grid.IsInitDone;
 
-        private Dictionary<long, GraphLink> _graph { get; set; }
+        private Dictionary<string, GraphLink> _graph { get; set; }
         private SpatialIndex _grid { get; }
 
 
@@ -54,7 +54,7 @@ namespace RoadPathFinder.Models.Map
             }
             CoordinateSystem = coordinateSystems.First();
             _graph = links.ToDictionary(l => l.ID);
-            _grid = new(Graph);
+            _grid = new(ID, _graph);
         }
 
         /// <summary>
@@ -64,11 +64,10 @@ namespace RoadPathFinder.Models.Map
         /// <param name="maxThreads"></param>
         /// <param name="logger"></param>
         /// <returns></returns>
-        public async Task Init(bool refresh = false, int maxThreads = 4, ILogger? logger = null)
+        public async Task<bool> Init(bool refresh = false, int maxThreads = 4, ILogger? logger = null)
         {
-            Task<Report> spatialIndexInit = _grid.Init(refresh, maxThreads);
-            Report spatialIndexInitReport = await spatialIndexInit;
-            return spatialIndexInitReport;
+            await _grid.Init(refresh, maxThreads, logger);
+            return IsInitDone;
         }
 
         /// <summary>
@@ -87,7 +86,5 @@ namespace RoadPathFinder.Models.Map
             var result = _grid.SearchLinksWithinDistance(center, maxDistanceMeter);
             return result;
         }
-
-
     }
 }

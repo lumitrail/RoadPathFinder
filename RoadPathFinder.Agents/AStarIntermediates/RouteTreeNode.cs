@@ -82,7 +82,7 @@ namespace RoadPathFinder.Agents.AStarIntermediates
             ArgumentNullException.ThrowIfNull(link, nameof(link));
             ArgumentNullException.ThrowIfNull(parentNode, nameof(parentNode));
 
-            long parentEndNodeID = parentNode.GetDirectionalEndNodeID();
+            string parentEndNodeID = parentNode.GetDirectionalEndNodeID();
 
             if (parentEndNodeID == link.StartNodeID)
             {
