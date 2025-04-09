@@ -21,7 +21,6 @@ namespace RoadPathFinder.Agents
         /// <param name="toLinkID"></param>
         /// <param name="toLinkDirection"></param>
         /// <returns></returns>
-        /// <exception cref="NotImplementedException"></exception>
         public static SearchResult FindPath(MapSpace map,
             long fromLinkID, EDirection fromLinkDirection,
             long toLinkID, EDirection toLinkDirection)

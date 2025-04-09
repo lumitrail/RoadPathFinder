@@ -5,6 +5,9 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 
+using System.Diagnostics.CodeAnalysis;
+using RoadPathFinder.Models.Elements;
+
 namespace RoadPathFinder.Agents.AStarIntermediates
 {
     /// <summary>
@@ -20,10 +23,15 @@ namespace RoadPathFinder.Agents.AStarIntermediates
         private SortedDictionary<double, RouteTreeNode> _candidates { get; } = new();
 
         /// <summary>
-        /// key: directional link ID<br></br>
-        /// value: key of _candidates
+        /// key: directional link ID (negative ID = reverse direction)<br></br>
         /// </summary>
+        /// <remarks>value: key of _candidates</remarks>
         private Dictionary<long, double> _candidatesKeys { get; } = new();
+
+        /// <summary>
+        /// for lock
+        /// </summary>
+        private object _addPopLockObj { get; } = new();
 
 
         // 되어야 하는 것: 휴리스틱 cost로 정렬(double) -> route tree node
@@ -38,17 +46,64 @@ namespace RoadPathFinder.Agents.AStarIntermediates
 
         public void Add(RouteTreeNode newCandidate)
         {
-            long directionalID = newCandidate.DirectionalLinkID;
-
-            if (_candidatesKeys.TryGetValue(directionalID, out double oldCandidatesKey)
-                && oldCandidatesKey > newCandidate.AccumulatedDistance + newCandidate.HeuristicDistance)
+            lock (_addPopLockObj)
             {
-                // new candidate is better!
-                RemoveCandidate(directionalID);
+                long directionalID = newCandidate.DirectionalLinkID;
+
+                if (_candidatesKeys.TryGetValue(directionalID, out double oldCandidatesKey)
+                    && oldCandidatesKey > newCandidate.AccumulatedDistance + newCandidate.HeuristicDistance)
+                {
+                    // new candidate is better!
+                    TryRemoveCandidate(directionalID);
+                }
+
+                AddToDictionaries(newCandidate);
+            }
+        }
+
+        /// <summary>
+        /// Get the most promising candidate and get it removed from candidates list
+        /// </summary>
+        /// <returns></returns>
+        public RouteTreeNode? Pop()
+        {
+            lock (_addPopLockObj)
+            {
+                throw new NotImplementedException();
+            }
+        }
+
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="linkID"></param>
+        /// <returns></returns>
+        public bool Exists(long linkID, out EDirection existingCases)
+        {
+            bool forward = _candidatesKeys.ContainsKey(linkID);
+            bool backward = _candidatesKeys.ContainsKey(-linkID);
+
+            if (forward && backward)
+            {
+                existingCases = EDirection.Both;
+            }
+            else if (forward)
+            {
+                existingCases = EDirection.Forward;
+            }
+            else if (backward)
+            {
+                existingCases = EDirection.Backward;
+            }
+            else
+            {
+                existingCases = EDirection.Both;
             }
 
-            AddToDictionaries(newCandidate);
+            return forward || backward;
         }
+
 
         /// <summary>
         /// 
@@ -56,6 +111,7 @@ namespace RoadPathFinder.Agents.AStarIntermediates
         /// <param name="candidate"></param>
         /// <exception cref="ArgumentNullException"></exception>
         /// <exception cref="KeyNotFoundException"></exception>
+        /// <remarks>use inside lock</remarks>
         private void AddToDictionaries(RouteTreeNode candidate)
         {
             ArgumentNullException.ThrowIfNull(candidate, nameof(candidate));
@@ -74,17 +130,12 @@ namespace RoadPathFinder.Agents.AStarIntermediates
         /// 
         /// </summary>
         /// <param name="directionalID"></param>
-        private void RemoveCandidate(long directionalID)
+        /// <remarks>use inside lock</remarks>
+        private bool TryRemoveCandidate(long directionalID)
         {
-            try
-            {
-                double _candidatesKey = _candidatesKeys[directionalID];
-                _candidatesKeys.Remove(directionalID);
-                _candidates.Remove(_candidatesKey);
-            }
-            catch
-            {
-            }
+            return _candidatesKeys.TryGetValue(directionalID, out double candidatesKey)
+                && _candidatesKeys.Remove(directionalID)
+                && _candidates.Remove(candidatesKey);
         }
     }
 }

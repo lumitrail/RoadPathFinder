@@ -8,7 +8,6 @@ using SmallGeometry.Euclidean;
 using SmallGeometry.Primitives;
 
 using RoadPathFinder.Models.Elements;
-using RoadPathFinder.Models.Utils;
 
 namespace RoadPathFinder.Models.Map
 {
@@ -27,14 +26,14 @@ namespace RoadPathFinder.Models.Map
         public bool IsInitInProgress => _initMutex.IsLocked();
         public bool IsInitFail { get; private set; } = false;
 
-        private IReadOnlyDictionary<string, GraphLink> _graph { get; }
-        private Dictionary<string, HashSet<string>> _tile { get; set; } = new();
+        private IReadOnlyDictionary<long, GraphLink> _graph { get; }
+        private Dictionary<string, HashSet<long>> _tile { get; set; } = new();
         private MutexSingle _initMutex { get; } = new();
 
 
         public SpatialIndex(
             Guid mapID,
-            IReadOnlyDictionary<string, GraphLink> graph,
+            IReadOnlyDictionary<long, GraphLink> graph,
             double tileSideLength = 100)
         {
             MapID = mapID;
@@ -126,10 +125,10 @@ namespace RoadPathFinder.Models.Map
         {
             IEnumerable<string> tileKeys = GetSurroundingTileIndexKeys(center, tileRange);
 
-            var resultLinkIDs = new HashSet<string>();
-            foreach (string tileKey in tileKeys)
+            var resultLinkIDs = new HashSet<long>();
+            foreach (var tileKey in tileKeys)
             {
-                if (_tile.TryGetValue(tileKey, out HashSet<string>? tileLinkIDs))
+                if (_tile.TryGetValue(tileKey, out HashSet<long>? tileLinkIDs))
                 {
                     foreach (var linkID in tileLinkIDs)
                     {
@@ -167,7 +166,7 @@ namespace RoadPathFinder.Models.Map
         /// <returns></returns>
         private void BuildIndex(int maxThreads, ILogger? logger)
         {
-            var tempTile = new ConcurrentDictionary<string, ConcurrentBag<string>>();
+            var tempTile = new ConcurrentDictionary<string, ConcurrentBag<long>>();
             object[] buildLoggerInfo = [MapID, "Building index"];
 
             // build tempTile
@@ -214,11 +213,11 @@ namespace RoadPathFinder.Models.Map
                 {
                     string key = GetIndexKey(fp);
 
-                    tempTile.TryAdd(key, new ConcurrentBag<string>());
+                    tempTile.TryAdd(key, new ConcurrentBag<long>());
 
                     if (tempTile.TryGetValue(
                         key,
-                        out ConcurrentBag<string>? linkIDs))
+                        out ConcurrentBag<long>? linkIDs))
                     {
                         linkIDs.Add(link.ID);
                     }

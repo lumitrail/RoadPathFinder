@@ -2,6 +2,9 @@
 
 namespace RoadPathFinder.Models.Elements
 {
+    /// <summary>
+    /// Link의 양 끝에 결합되어야 하는 node
+    /// </summary>
     public class GraphNode
     {
         /// <summary></summary>

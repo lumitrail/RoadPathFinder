@@ -21,6 +21,8 @@ namespace RoadPathFinder.Agents.AStarIntermediates
         /// </summary>
         public double HeuristicDistance { get; }
 
+        public long DirectionalLinkID { get; }
+
 
         /// <summary>
         /// 
@@ -43,10 +45,12 @@ namespace RoadPathFinder.Agents.AStarIntermediates
             if (IsForwardDirection)
             {
                 HeuristicDistance = destination.GetDistance(link.Last());
+                DirectionalLinkID = Link.ID;
             }
             else
             {
                 HeuristicDistance = destination.GetDistance(link.First());
+                DirectionalLinkID = -Link.ID;
             }
         }
 
@@ -82,7 +86,8 @@ namespace RoadPathFinder.Agents.AStarIntermediates
             ArgumentNullException.ThrowIfNull(link, nameof(link));
             ArgumentNullException.ThrowIfNull(parentNode, nameof(parentNode));
 
-            string parentEndNodeID = parentNode.GetDirectionalEndNodeID();
+
+            long parentEndNodeID = parentNode.GetDirectionalEndNodeID();
 
             if (parentEndNodeID == link.StartNodeID)
             {
@@ -95,6 +100,18 @@ namespace RoadPathFinder.Agents.AStarIntermediates
             else
             {
                 throw new ArgumentException($"Link {link.ID}({link.StartNodeID}-{link.EndNodeID}) is not connected to parent link {parentNode.Link.ID}(->{parentEndNodeID})");
+            }
+        }
+
+        private long GetDirectionalEndNodeID()
+        {
+            if (DirectionalLinkID > 0)
+            {
+                return Link.EndNodeID;
+            }
+            else
+            {
+                return Link.StartNodeID;
             }
         }
     }

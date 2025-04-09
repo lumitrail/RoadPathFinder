@@ -3,7 +3,6 @@ using SmallGeometry.Exceptions;
 
 using RoadPathFinder.Models.Elements;
 using Microsoft.Extensions.Logging;
-using RoadPathFinder.Models.Utils;
 
 namespace RoadPathFinder.Models.Map
 {
@@ -24,7 +23,7 @@ namespace RoadPathFinder.Models.Map
         /// <summary>
         /// 
         /// </summary>
-        public IReadOnlyDictionary<string, GraphLink> Graph => _graph;
+        public IReadOnlyDictionary<long, GraphLink> Graph => _graph;
         /// <summary>
         /// 
         /// </summary>
@@ -34,7 +33,7 @@ namespace RoadPathFinder.Models.Map
         /// </summary>
         public bool IsInitDone => _grid != null && _grid.IsInitDone;
 
-        private Dictionary<string, GraphLink> _graph { get; set; }
+        private Dictionary<long, GraphLink> _graph { get; set; }
         private SpatialIndex _grid { get; }
 
 
