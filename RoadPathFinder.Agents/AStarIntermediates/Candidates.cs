@@ -1,12 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Security.Cryptography;
-using System.Text;
-using System.Threading.Tasks;
-
-using System.Diagnostics.CodeAnalysis;
-using RoadPathFinder.Models.Elements;
+﻿using RoadPathFinder.Models.Elements;
 
 namespace RoadPathFinder.Agents.AStarIntermediates
 {
@@ -67,9 +59,17 @@ namespace RoadPathFinder.Agents.AStarIntermediates
         /// <returns></returns>
         public RouteTreeNode? Pop()
         {
+            if (_candidates.Count == 0)
+            {
+                return null;
+            }
+
             lock (_addPopLockObj)
             {
-                throw new NotImplementedException();
+                var bestCandiate = _candidates.First();
+                _candidates.Remove(bestCandiate.Key);
+                _candidatesKeys.Remove(bestCandiate.Value.DirectionalLinkID);
+                return bestCandiate.Value;
             }
         }
 
@@ -111,7 +111,7 @@ namespace RoadPathFinder.Agents.AStarIntermediates
         /// <param name="candidate"></param>
         /// <exception cref="ArgumentNullException"></exception>
         /// <exception cref="KeyNotFoundException"></exception>
-        /// <remarks>use inside lock</remarks>
+        /// <remarks>use your lock!</remarks>
         private void AddToDictionaries(RouteTreeNode candidate)
         {
             ArgumentNullException.ThrowIfNull(candidate, nameof(candidate));
@@ -130,7 +130,7 @@ namespace RoadPathFinder.Agents.AStarIntermediates
         /// 
         /// </summary>
         /// <param name="directionalID"></param>
-        /// <remarks>use inside lock</remarks>
+        /// <remarks>use your lock!</remarks>
         private bool TryRemoveCandidate(long directionalID)
         {
             return _candidatesKeys.TryGetValue(directionalID, out double candidatesKey)
