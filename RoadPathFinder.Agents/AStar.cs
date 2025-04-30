@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -7,6 +8,7 @@ using System.Threading.Tasks;
 using RoadPathFinder.Models;
 using RoadPathFinder.Models.Elements;
 using RoadPathFinder.Models.Map;
+using SmallGeometry.Euclidean;
 
 namespace RoadPathFinder.Agents
 {
@@ -25,9 +27,11 @@ namespace RoadPathFinder.Agents
             long fromLinkID, EDirection fromLinkDirection,
             long toLinkID, EDirection toLinkDirection)
         {
-            ArgumentNullException.ThrowIfNull(map, nameof(map));
+            Debug.Assert(map != null);
+            Debug.Assert(map.Graph.ContainsKey(fromLinkID));
+            Debug.Assert(map.Graph.ContainsKey(toLinkID));
+            
 
-            throw new NotImplementedException();
         }
     }
 }

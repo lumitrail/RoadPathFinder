@@ -17,12 +17,12 @@ namespace RoadPathFinder.Models
             RouteNotFound,
         }
 
-        public required GraphSetDetails MapInfo { get; init; }
-
+        public required Guid ResultID { get; init; } = new Guid();
+        
         public required EResultFlags ResultFlags { get; init; }
-
-        public required IReadOnlyList<long> Links { get; init; }
-        public required FlatLine FlatCoordinates { get; init; }
+        public required Guid MapID { get; init; }
+        public required FlatLine? FlatCoordinates { get; init; }
+        public required IReadOnlyList<long>? Links { get; init; }
 
         /// <summary>
         /// 
