@@ -7,6 +7,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="9.0.4" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\RoadPathFinder.Agents\RoadPathFinder.Agents.csproj" />
     <ProjectReference Include="..\RoadPathFinder.Models\RoadPathFinder.Models.csproj" />
   </ItemGroup>
