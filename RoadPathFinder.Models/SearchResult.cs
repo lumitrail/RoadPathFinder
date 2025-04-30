@@ -8,7 +8,19 @@ namespace RoadPathFinder.Models
 {
     public class SearchResult
     {
+        [Flags]
+        public enum EResultFlags
+        {
+            Success = 0,
+            FromLinkNotFound,
+            ToLinkNotFound,
+            RouteNotFound,
+        }
+
         public required GraphSetDetails MapInfo { get; init; }
+
+        public required EResultFlags ResultFlags { get; init; }
+
         public required IReadOnlyList<long> Links { get; init; }
         public required FlatLine FlatCoordinates { get; init; }
 
