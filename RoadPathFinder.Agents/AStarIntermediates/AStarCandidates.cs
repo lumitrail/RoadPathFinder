@@ -5,7 +5,7 @@ namespace RoadPathFinder.Agents.AStarIntermediates
     /// <summary>
     /// next links to visit
     /// </summary>
-    internal class Candidates
+    internal class AStarCandidates
     {
         public int Count => _candidatesKeys.Count;
 
@@ -31,7 +31,7 @@ namespace RoadPathFinder.Agents.AStarIntermediates
         // 이거 2차원인거 같은데
         // 
 
-        public Candidates()
+        public AStarCandidates()
         {
         }
 

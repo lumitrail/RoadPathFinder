@@ -13,31 +13,50 @@ using RoadPathFinder.Models;
 using RoadPathFinder.Models.Elements;
 using RoadPathFinder.Models.Map;
 
+using RoadPathFinder.Agents.AStarIntermediates;
+
 namespace RoadPathFinder.Agents
 {
     public static class AStar
     {
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="map"></param>
-        /// <param name="fromLinkID"></param>
-        /// <param name="fromLinkDirection"></param>
-        /// <param name="toLinkID"></param>
-        /// <param name="toLinkDirection"></param>
-        /// <param name="logger"></param>
-        /// <param name="loggerInfo"></param>
-        /// <returns></returns>
+
         public static SearchResult FindPath(MapSpace map,
             long fromLinkID, EDirection fromLinkDirection,
             long toLinkID, EDirection toLinkDirection,
+            FlatPoint destination, int maxSearchRange,
             ILogger? logger, object[]? loggerInfo)
         {
             Debug.Assert(map != null);
+            Debug.Assert(fromLinkID != toLinkID);
             Debug.Assert(map.Graph.ContainsKey(fromLinkID));
             Debug.Assert(map.Graph.ContainsKey(toLinkID));
-            
 
+            var fromLink = map.Graph[fromLinkID];
+            var toLink = map.Graph[toLinkID];
+
+            var candidates = new AStarCandidates();
+            var visited = new Dictionary<long, RouteTreeNode>();
+
+            // initial conditions for searching
+            if (fromLinkDirection == EDirection.Forward
+                || fromLinkDirection == EDirection.Both)
+            {
+                var fromLinkForwardStart = new RouteTreeNode(fromLink, true, destination);
+                candidates.Add(fromLinkForwardStart);
+            }
+            
+            if (fromLinkDirection == EDirection.Backward
+                || fromLinkDirection == EDirection.Both)
+            {
+                var fromLinkBackwardStart = new RouteTreeNode(fromLink, false, destination);
+                candidates.Add(fromLinkBackwardStart);
+            }
+
+            // start searching!
+            for (int i = 0; i < maxSearchRange; i++)
+            {
+
+            }
         }
     }
 }

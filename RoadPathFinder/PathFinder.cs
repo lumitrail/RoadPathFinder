@@ -33,6 +33,14 @@ namespace RoadPathFinder
             }
 
             throw new NotImplementedException();
+
+            // edge case
+            if (fromLinkID == toLinkID)
+            {
+                // 2 cases: go ahead, turn back
+
+
+            }
         }
 
         // TO DO

@@ -243,7 +243,7 @@ namespace RoadPathFinder.Models.Map
             var eastWestVectors = new List<Vector2D>(2 * tileRange + 1);
             var northSouthVectors = new List<Vector2D>(2 * tileRange + 1);
 
-            for (int i = 0; i <= tileRange; ++i)
+            for (int i = 0; i <= tileRange; i++)
             {
                 var east = new Vector2D(tileRange * TileSideLength, 0);
                 eastWestVectors.Add(east);
