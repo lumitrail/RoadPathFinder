@@ -23,13 +23,15 @@ namespace RoadPathFinder.Agents
         public static SearchResult FindPath(MapSpace map,
             long fromLinkID, EDirection fromLinkDirection,
             long toLinkID, EDirection toLinkDirection,
-            FlatPoint destination, int maxSearchRange,
+            FlatPoint destination, int maxIterations,
             ILogger? logger, object[]? loggerInfo)
         {
             Debug.Assert(map != null);
             Debug.Assert(fromLinkID != toLinkID);
             Debug.Assert(map.Graph.ContainsKey(fromLinkID));
             Debug.Assert(map.Graph.ContainsKey(toLinkID));
+            Debug.Assert(map.CoordinateSystem == destination.CoordinateSystem);
+            Debug.Assert(maxIterations > 0);
 
             var fromLink = map.Graph[fromLinkID];
             var toLink = map.Graph[toLinkID];
@@ -53,9 +55,14 @@ namespace RoadPathFinder.Agents
             }
 
             // start searching!
-            for (int i = 0; i < maxSearchRange; i++)
+            for (int i = 0; i < maxIterations; i++)
             {
+                if (candidates.CheckArrival(toLinkID, toLinkDirection, out RouteTreeNode? goal))
+                {
+#error when arrived
+                }
 
+#error continue searching
             }
         }
     }

@@ -1,4 +1,6 @@
-﻿using RoadPathFinder.Models.Elements;
+﻿using System.Diagnostics.CodeAnalysis;
+
+using RoadPathFinder.Models.Elements;
 
 namespace RoadPathFinder.Agents.AStarIntermediates
 {
@@ -102,6 +104,50 @@ namespace RoadPathFinder.Agents.AStarIntermediates
             }
 
             return forward || backward;
+        }
+
+
+        /// <summary>
+        /// Get without removing
+        /// </summary>
+        /// <param name="linkID"></param>
+        /// <param name="requiredDirection"></param>
+        /// <param name="candidate"></param>
+        /// <returns></returns>
+        public bool CheckArrival(long linkID, EDirection requiredDirection,
+            [NotNullWhen(true)] out RouteTreeNode? candidate)
+        {
+            switch (requiredDirection)
+            {
+                case EDirection.Forward:
+                    return TryPeekWithDirectionalID(linkID, out candidate);
+
+                case EDirection.Backward:
+                    return TryPeekWithDirectionalID(-linkID, out candidate);
+
+                case EDirection.Both:
+                    return TryPeekWithDirectionalID(linkID, out candidate)
+                        || TryPeekWithDirectionalID(-linkID, out candidate);
+            }
+
+            candidate = null;
+            return false;
+        }
+
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="directionalLinkID"></param>
+        /// <param name="candidate"></param>
+        /// <returns></returns>
+        private bool TryPeekWithDirectionalID(long directionalLinkID,
+            [NotNullWhen(true)] out RouteTreeNode? candidate)
+        {
+            candidate = null;
+
+            return _candidatesKeys.TryGetValue(directionalLinkID, out double key)
+                && _candidates.TryGetValue(key, out candidate);
         }
 
 
